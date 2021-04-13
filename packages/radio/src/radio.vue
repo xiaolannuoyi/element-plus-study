@@ -14,6 +14,11 @@
     :tabindex="tabIndex"
     @keydown.space.stop.prevent="model = isDisabled ? model : label"
   >
+    <!-- :tabindex="tabIndex"
+    @keydown.space.stop.prevent="model = isDisabled ? model : label"
+    这个功能是为了用tab切换不同选项时，按空格可以快速选择目标项 -->
+
+    <!-- 模拟圆形按钮 -->
     <span
       class="el-radio__input"
       :class="{
@@ -21,7 +26,10 @@
         'is-checked': model === label
       }"
     >
+      <!-- 圆形样式 -->
       <span class="el-radio__inner"></span>
+      <!-- 真正的按钮 -->
+      <!-- el-radio__original ⚠️注意这个样式 -->
       <input
         ref="radioRef"
         v-model="model"
@@ -37,6 +45,8 @@
         @change="handleChange"
       >
     </span>
+    <!-- 文字部分 -->
+    <!-- keydown.stop 阻止事件继续冒泡 -->
     <span class="el-radio__label" @keydown.stop>
       <slot>
         {{ label }}
@@ -100,11 +110,11 @@ export default defineComponent({
       },
       set(val) {
         if (isGroup.value) {
-          radioGroup.changeEvent(val)
+          radioGroup.changeEvent(val)//修改radioGroup的v-model值
         } else {
-          ctx.emit(UPDATE_MODEL_EVENT, val)
+          ctx.emit(UPDATE_MODEL_EVENT, val)//update:modelValue 修改radio的v-model值
         }
-        radioRef.value.checked = props.modelValue === props.label
+        radioRef.value.checked = props.modelValue === props.label //dom 对象上的 checked 属性
       },
     })
 
@@ -126,6 +136,10 @@ export default defineComponent({
     })
 
     function handleChange() {
+      // 不使用nextTick时，
+      // radio 触发顺序是 set->emit->父组件v-model值变化->get->此事件->父组件change
+      // ❓所以这个位置为什么使用nextTick，使用了nextTick 解决了什么问题？
+      // 暂时感觉并没有什么用处。
       nextTick(() => {
         ctx.emit('change', model.value)
       })

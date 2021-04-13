@@ -69,7 +69,10 @@ export default defineComponent({
 
     // methods
     const changeEvent = value => {
-      ctx.emit(UPDATE_MODEL_EVENT, value)
+      // 此处nextTick作用，保证执行顺序。 先 ctx.emit(UPDATE_MODEL_EVENT, value)，后 ctx.emit('change', value)，保证`v-model`变化会优先于`change`执行。
+      // 如果没有 nextTick，执行顺序相反，
+      // 因为ctx.emit(UPDATE_MODEL_EVENT, value)，更新值的变化，会导致页面更新，所以会在`下次页面更新时执行`。而chang事件会在`当前执行`。
+      ctx.emit(UPDATE_MODEL_EVENT, value)//update:modelValue
       nextTick(() => {
         ctx.emit('change', value)
       })
@@ -88,7 +91,7 @@ export default defineComponent({
 
     const handleKeydown = e => { // 左右上下按键 可以在radio组内切换不同选项
       const target = e.target
-      const className = target.nodeName === 'INPUT' ? '[type=radio]' : '[role=radio]'
+      const className = target.nodeName === 'INPUT' ? '[type=radio]' : '[role=radio]'//radio||label
       const radios = radioGroup.value.querySelectorAll(className)
       const length = radios.length
       const index = Array.from(radios).indexOf(target)
@@ -97,15 +100,17 @@ export default defineComponent({
       switch (e.code) {
         case EVENT_CODE.left:
         case EVENT_CODE.up:
-          e.stopPropagation()
-          e.preventDefault()
-          nextIndex = index === 0 ? length - 1 : index - 1
+          //⬅️⬆️ 选中前一个
+          e.stopPropagation()//阻止冒泡
+          e.preventDefault()//阻止默认行为
+          nextIndex = index === 0 ? length - 1 : index - 1//如果当前选中的是第一个，则下一个选中的是最后一个，否则是前一个
           break
         case EVENT_CODE.right:
         case EVENT_CODE.down:
+          //➡️⬇️ 选中后一个
           e.stopPropagation()
           e.preventDefault()
-          nextIndex = (index === (length - 1)) ? 0 : index + 1
+          nextIndex = (index === (length - 1)) ? 0 : index + 1//如果当前选中的是最后一个，则下一个选中的是第一个，否则是后一个
           break
         default:
           break
@@ -118,6 +123,8 @@ export default defineComponent({
     onMounted(() => {
       const radios = radioGroup.value.querySelectorAll('[type=radio]')
       const firstLabel = radios[0]
+      //radios 中没有选中的 且 firstLabel 存在，初始化 firstLabel的tabIndex
+      //input标签中 tabIndex = 0
       if (!Array.from(radios).some((radio: HTMLInputElement) => radio.checked) && firstLabel) {
         firstLabel.tabIndex = 0
       }
