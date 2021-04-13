@@ -18,11 +18,13 @@
     @mouseenter="onMouseEnter"
     @mouseleave="onMouseLeave"
   >
+    <!-- 非 textarea -->
     <template v-if="type !== 'textarea'">
       <!-- 前置元素 -->
       <div v-if="$slots.prepend" class="el-input-group__prepend">
         <slot name="prepend"></slot>
       </div>
+      <!-- 输入框 -->
       <input
         v-if="type !== 'textarea'"
         ref="input"
@@ -79,6 +81,7 @@
         <slot name="append"></slot>
       </div>
     </template>
+    <!-- textarea -->
     <textarea
       v-else
       ref="textarea"
@@ -98,9 +101,9 @@
       @focus="handleFocus"
       @blur="handleBlur"
       @change="handleChange"
-      @keydown="handleKeydown"
     >
     </textarea>
+    <!-- textarea 字数限制 -->
     <span v-if="isWordLimitVisible && type === 'textarea'" class="el-input__count">{{ textLength }}/{{ upperLimit }}</span>
   </div>
 </template>
@@ -209,7 +212,7 @@ export default defineComponent({
     label: {
       type: String,
     },
-    tabindex: {
+    tabindex: { // 控制tab键按下后的访问顺序，由用户传入tabindex如果设置为负数则无法通过tab键访问，设置为0则是在最后访问。
       type: String,
     },
     validateEvent: {
@@ -223,7 +226,7 @@ export default defineComponent({
 
   setup(props, ctx) {
     const instance = getCurrentInstance()
-    const attrs = useAttrs()
+    const attrs = useAttrs()//主要是返回 **除了**`class`、`style`及其他事件的属性
     const $ELEMENT = useGlobalConfig()
 
     const elForm = inject(elFormKey, {} as ElFormContext)
@@ -231,13 +234,14 @@ export default defineComponent({
 
     const input = ref(null)
     const textarea = ref (null)
-    const focused = ref(false)
-    const hovering = ref(false)
-    const isComposing = ref(false)
-    const passwordVisible = ref(false)
-    const _textareaCalcStyle = shallowRef({})
-
-    const inputOrTextarea = computed(() => input.value || textarea.value)
+    const focused = ref(false)// focus 状态，用于判断 清空图标的显示、密码查看图标。状态修改的事件 为 focus,blur
+    const hovering = ref(false)//hover 状态，用于判断是否显示 清空图标.状态修改的事件 为 onMouseLeave,onMouseEnter
+    const isComposing = ref(false)//正在输入 状态，用于中文输入时，正在输入，但文本未确认时。此时也触发input事件，但是此时不应该修改v-model值
+    // 状态改变的事件 input
+    // ☞ compositionstart  文字输入之前触发 ☞ compositionupdate 输入过程中每次敲击键盘触发 ☞ compositionend 选择字词完成时触发
+    const passwordVisible = ref(false)//是否显示密码 用于input type 的切换,事件触发 click 密码查看图标
+    const _textareaCalcStyle = shallowRef({})//
+    const inputOrTextarea = computed(() => input.value || textarea.value)//dom
     const inputSize = computed(() => props.size || elFormItem.size || $ELEMENT.size)
     const needStatusIcon = computed(() => elForm.statusIcon)
     const validateState = computed(() => elFormItem.validateState || '')
@@ -247,15 +251,23 @@ export default defineComponent({
       resize: props.resize,
     }))
     const inputDisabled = computed(() => props.disabled || elForm.disabled)
+    // modelValue的值
     const nativeInputValue = computed(() => (props.modelValue === null || props.modelValue === undefined) ? '' : String(props.modelValue))
+    //限制长度
     const upperLimit = computed(() => ctx.attrs.maxlength)
+    // 是否显示 清空图标按钮
     const showClear = computed(() => {
+      // 是否传递了 clearable
+      // 是否被禁用了
+      // 是否只读
+      // 是否聚焦或者 hover 状态
       return props.clearable &&
         !inputDisabled.value &&
         !props.readonly &&
         nativeInputValue.value &&
         (focused.value || hovering.value)
     })
+    // 是否显示 密码查看图标
     const showPwdVisible = computed(() => {
       return props.showPassword &&
         !inputDisabled.value &&
@@ -270,6 +282,7 @@ export default defineComponent({
         !props.readonly &&
         !props.showPassword
     })
+    //输入框输入的字符长度
     const textLength = computed(() => {
       return typeof props.modelValue === 'number' ? String(props.modelValue).length : (props.modelValue || '').length
     })
@@ -277,14 +290,14 @@ export default defineComponent({
       // show exceed style if length of initial value greater then maxlength
       return isWordLimitVisible.value && (textLength.value > upperLimit.value)
     })
-
+    //textarea的高度自适应
     const resizeTextarea = () => {
       const { type, autosize } = props
-
+      // isServer  typeof window === 'undefined' 是否运行于服务器 （服务器渲染）
       if (isServer || type !== 'textarea') return
 
       if (autosize) {
-        const minRows = isObject(autosize) ? autosize.minRows : void 0
+        const minRows = isObject(autosize) ? autosize.minRows : void 0 //void 0 代替undefined,主要原因在于避免 undefined 值被重写带来的风险
         const maxRows = isObject(autosize) ? autosize.maxRows : void 0
         _textareaCalcStyle.value = calcTextareaHeight(textarea.value, minRows, maxRows)
       } else {
@@ -293,13 +306,13 @@ export default defineComponent({
         }
       }
     }
-
+    //通过dom设置input value
     const setNativeInputValue = () => {
-      const input = inputOrTextarea.value
+      const input = inputOrTextarea.value//dom value
       if (!input || input.value === nativeInputValue.value) return
       input.value = nativeInputValue.value
     }
-
+    // 计算图标偏移
     const calcIconOffset = place => {
       const { el } = instance.vnode
       const elList: HTMLSpanElement[] = Array.from(el.querySelectorAll(`.el-input__${place}`))
@@ -320,12 +333,13 @@ export default defineComponent({
       calcIconOffset('prefix')
       calcIconOffset('suffix')
     }
-
+    // @input 事件
     const handleInput = event => {
       const { value } = event.target
 
       // should not emit input during composition
       // see: https://github.com/ElemeFE/element/issues/10516
+      // 如果正在输入就不触发 input 事件
       if (isComposing.value) return
 
       // hack for https://github.com/ElemeFE/element/issues/8548
@@ -346,6 +360,7 @@ export default defineComponent({
 
     const focus = () => {
       // see: https://github.com/ElemeFE/element/issues/18573
+      // 密码显示与隐藏的切换 使光标位置置后 使用nextTick,页面更新 在聚焦（显示密码后在聚焦，焦点在文字后面）
       nextTick(() => {
         inputOrTextarea.value.focus()
       })
@@ -371,13 +386,21 @@ export default defineComponent({
     const select = () => {
       inputOrTextarea.value.select()
     }
-
+    // compositionstart  文字输入之前触发
+    // compositionupdate 输入过程中每次敲击键盘触发
+    // compositionend    选择字词完成时触发
+    // 注册这三个事件的原因在于实现中文输入法下，仅在选词后触发 input 事件。由于在输入拼音的时输入框不是立即获得输入的值，而是要确实后才能获取到。
+    //
+    // 触发compositionstart时，文本框会填入待确认文本，同时触发 input 事件；如果不想触发 input ，需设置一个变量来控制。
     const handleCompositionStart = () => {
+      //正在输入
       isComposing.value = true
     }
 
     const handleCompositionUpdate = event => {
+      // 获取敲击键盘的值（不含当前输入）
       const text = event.target.value
+      // 敲击中的最后一个（不含当前输入）
       const lastCharacter = text[text.length - 1] || ''
       isComposing.value = !isKorean(lastCharacter)
     }
@@ -394,19 +417,20 @@ export default defineComponent({
       ctx.emit('change', '')
       ctx.emit('clear')
     }
-
+    // 密码显示与隐藏
     const handlePasswordVisible = () => {
       passwordVisible.value = !passwordVisible.value
-      focus()
+      focus()//当切换时，光标位置置于最后
     }
-
+    //用来判断后置内容是否显示，包括图标、清空按钮、显示密码按钮、输入长度限制字符。
+    //html 中v-if时使用，判断是否显示后置内容。
     const getSuffixVisible = () => {
       return ctx.slots.suffix ||
         props.suffixIcon ||
         showClear.value ||
         props.showPassword ||
         isWordLimitVisible.value ||
-        (validateState.value && needStatusIcon.value)
+        (validateState.value && needStatusIcon.value) // 这个主要和表单校验有关
     }
 
     watch(() => props.modelValue, val => {
