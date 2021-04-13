@@ -37,29 +37,34 @@ const useModel = (props: ICheckboxProps) => {
   let selfModel = false
   const { emit } = getCurrentInstance()
   const { isGroup, checkboxGroup } = useCheckboxGroup()
-  const isLimitExceeded = ref(false)
+  const isLimitExceeded = ref(false)//是否突破限制
+  //checkbox-group组件实例的value或当前value
   const store = computed(() => checkboxGroup ? checkboxGroup.modelValue?.value : props.modelValue)
   const model = computed({
     get() {
       return isGroup.value
         ? store.value
         : props.modelValue ?? selfModel
+        // 「双问号」?? 如果给定变量值为 null 或者 undefined，则使用双问号后的默认值，否则使用该变量值。
     },
 
     set(val: unknown) {
-      if (isGroup.value && Array.isArray(val)) {
+      if (isGroup.value && Array.isArray(val)) { // checkbox-group
+        //是否突破限制 判断
         isLimitExceeded.value = false
-
+        // min定义了 且 当前选中长度 < min
         if (checkboxGroup.min !== undefined && val.length < checkboxGroup.min.value) {
           isLimitExceeded.value = true
         }
+        // max定义了 且 当前选中长度 > max
         if (checkboxGroup.max !== undefined && val.length > checkboxGroup.max.value) {
           isLimitExceeded.value = true
         }
-
+        //未突破限制 修改checkboxGroup的value值
+        // ?.链式调用。
         isLimitExceeded.value === false && checkboxGroup?.changeEvent?.(val)
       } else {
-        emit(UPDATE_MODEL_EVENT, val)
+        emit(UPDATE_MODEL_EVENT, val)//update:modelValue 修改checkbox的value值
         selfModel = val as boolean
       }
     },
@@ -75,8 +80,13 @@ const useCheckboxStatus = (props: ICheckboxProps, { model }: PartialReturnType<t
   const { isGroup, checkboxGroup, elFormItemSize, ELEMENT } = useCheckboxGroup()
   const focus = ref(false)
   const size = computed<string | undefined>(() => checkboxGroup?.checkboxGroupSize?.value || elFormItemSize.value || ELEMENT.size)
+  //是否被选中
   const isChecked = computed(() => {
     const value = model.value
+    //toTypeString 源于vue
+    //const objectToString = Object.prototype.toString;
+    //const toTypeString = (value) => objectToString.call(value);
+    //1.boolean 2.array 3.trueLabel 三种情况的判断
     if (toTypeString(value) === '[object Boolean]') {
       return value
     } else if (Array.isArray(value)) {
@@ -105,9 +115,13 @@ const useDisabled = (
   { model, isChecked }: PartialReturnType<typeof useModel> & PartialReturnType<typeof useCheckboxStatus>,
 ) => {
   const { elForm, isGroup, checkboxGroup } = useCheckboxGroup()
+  //是否是数量限制的禁用
   const isLimitDisabled = computed(() => {
     const max = checkboxGroup.max?.value
     const min = checkboxGroup.min?.value
+    //在设置max或者min的情况下，
+    // 选中的值>=max,当前复选框的状态如果是选中（true），那么不禁用（false）,反之，同理 未选中->禁用
+    // 选中的值<=min,当前复选框的状态如果是未选中（false），那么不禁用（false）,反之，同理 选中->禁用
     return !!(max || min) && (model.value.length >= max && !isChecked.value) ||
       (model.value.length <= min && isChecked.value)
   })
@@ -126,6 +140,7 @@ const useDisabled = (
 
 const setStoreValue = (props: ICheckboxProps, { model }: PartialReturnType<typeof useModel>) => {
   function addToStore() {
+    //如果是array,且当前model中未选中当前值时，将其选中
     if (
       Array.isArray(model.value) &&
       !model.value.includes(props.label)
@@ -135,6 +150,7 @@ const setStoreValue = (props: ICheckboxProps, { model }: PartialReturnType<typeo
       model.value = props.trueLabel || true
     }
   }
+  //但props.checked 为true时，修改model的值 使props.checked与model值 一致
   props.checked && addToStore()
 }
 
@@ -142,7 +158,7 @@ const useEvent = (props: ICheckboxProps, { isLimitExceeded }: PartialReturnType<
   const { elFormItem } = useCheckboxGroup()
   const { emit } = getCurrentInstance()
   function handleChange(e: InputEvent) {
-    if (isLimitExceeded.value) return
+    if (isLimitExceeded.value) return  //如果突破限制 就不能修改值
     const target = e.target as HTMLInputElement
     const value = target.checked
       ? props.trueLabel ?? true
@@ -150,7 +166,7 @@ const useEvent = (props: ICheckboxProps, { isLimitExceeded }: PartialReturnType<
 
     emit('change', value, e)
   }
-
+  // 监听value变化，与表单验证有关
   watch(() => props.modelValue, val => {
     elFormItem.formItemMitt?.emit('el.form.change', [val])
   })

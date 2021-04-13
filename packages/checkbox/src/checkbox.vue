@@ -10,6 +10,7 @@
     ]"
     :aria-controls="indeterminate ? controls : null"
   >
+    <!-- 复选框 -->
     <span
       class="el-checkbox__input"
       :class="{
@@ -22,7 +23,10 @@
       :role="indeterminate ? 'checkbox' : false"
       :aria-checked="indeterminate ? 'mixed' : false"
     >
+      <!-- aria-checked true 选中，false 未选中，mixed 不确定 -->
+      <!-- 复选框样式 -->
       <span class="el-checkbox__inner"></span>
+      <!-- 有trueLabel或falseLabel时展示 -->
       <input
         v-if="trueLabel || falseLabel"
         v-model="model"
@@ -38,6 +42,7 @@
         @focus="focus = true"
         @blur="focus = false"
       >
+      <!-- 无trueLabel或falseLabel时展示 -->
       <input
         v-else
         v-model="model"
@@ -52,6 +57,15 @@
         @blur="focus = false"
       >
     </span>
+    <!-- slot -->
+    <!-- 感觉radio中的写法更好些吧 -->
+
+    <!-- <span class="el-checkbox__label">
+      <slot>
+        {{ label }}
+      </slot>
+    </span> -->
+
     <span v-if="$slots.default || label" class="el-checkbox__label">
       <slot></slot>
       <template v-if="!$slots.default">{{ label }}</template>
