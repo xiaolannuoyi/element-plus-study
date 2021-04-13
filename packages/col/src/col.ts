@@ -50,8 +50,9 @@ const ElCol = defineComponent({
     },
   },
   setup(props, { slots }) {
-    const { gutter } = inject('ElRow', { gutter: { value: 0 } })
+    const { gutter } = inject('ElRow', { gutter: { value: 0 } })//参数为 key，defaultValue
 
+    //通过gutter 计算col左右的padding
     const style = computed(() => {
       if (gutter.value) {
         return {
@@ -63,13 +64,15 @@ const ElCol = defineComponent({
     })
     const classList = computed(() => {
       const ret: string[] = []
+      //处理布局相关
       const pos = ['span', 'offset', 'pull', 'push'] as const
       pos.forEach(prop => {
         const size = props[prop]
-        if (typeof size === 'number' && size > 0) {
+        if (typeof size === 'number' && size > 0) { //size>0 省去了pull、offset、push=0等问题，span=0 也没有了
           ret.push(prop !== 'span' ? `el-col-${prop}-${props[prop]}` : `el-col-${props[prop]}`)
         }
       })
+      //处理屏幕响应相关
       const sizes = ['xs', 'sm', 'md', 'lg', 'xl'] as const
       sizes.forEach(size => {
         if (typeof props[size] === 'number') {
@@ -83,6 +86,8 @@ const ElCol = defineComponent({
           })
         }
       })
+      // span=0 或者响应式 'xs', 'sm', 'md', 'lg', 'xl' = 0 时 占位换行问题,此处代码好像并没有什么用。
+      // 样式中 el-col-xs-0等 能解决这个问题。
       // this is for the fix
       if (gutter.value) {
         ret.push('is-guttered')

@@ -25,11 +25,12 @@ export default defineComponent({
     },
   },
   setup(props, { slots }) {
+    //可在 col 中拿到 gutter
     const gutter = computed(() => props.gutter)
     provide('ElRow', {
       gutter,
     })
-
+    //row的左右margin，用于抵消col的padding，这里通过gutter计算出实际margin
     const style = computed(() => {
       const ret = {
         marginLeft: '',
