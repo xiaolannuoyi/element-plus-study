@@ -7,6 +7,7 @@
     :aria-disabled="switchDisabled"
     @click.prevent="switchValue"
   >
+    <!-- Input 被隐藏了，且没有大小。所以input 上的事件时无法触发的。那这个input 有什么用呢？❓ -->
     <input
       :id="id"
       ref="input"
@@ -19,6 +20,7 @@
       @change="handleChange"
       @keydown.enter="switchValue"
     >
+    <!-- 前面文字描述 -->
     <span
       v-if="inactiveIconClass || inactiveText"
       :class="['el-switch__label', 'el-switch__label--left', !checked ? 'is-active' : '']"
@@ -26,11 +28,13 @@
       <i v-if="inactiveIconClass" :class="[inactiveIconClass]"></i>
       <span v-if="!inactiveIconClass && inactiveText" :aria-hidden="checked">{{ inactiveText }}</span>
     </span>
+    <!-- 开关部分 -->
     <span ref="core" class="el-switch__core" :style="{ 'width': (width || 40) + 'px' }">
       <div class="el-switch__action">
         <i v-if="loading" class="el-icon-loading"></i>
       </div>
     </span>
+    <!-- 后面文字描述 -->
     <span
       v-if="activeIconClass || activeText"
       :class="['el-switch__label', 'el-switch__label--right', checked ? 'is-active' : '']"
@@ -157,7 +161,8 @@ export default defineComponent({
     const checked = computed((): boolean => {
       return actualValue.value === props.activeValue
     })
-
+    //按位非后变为0，再！后变为1，为true，则进if
+    //[props.activeValue, props.inactiveValue].indexOf(actualValue.value) === -1
     if (!~[props.activeValue, props.inactiveValue].indexOf(actualValue.value)) {
       ctx.emit('update:modelValue', props.inactiveValue)
       ctx.emit('change', props.inactiveValue)
