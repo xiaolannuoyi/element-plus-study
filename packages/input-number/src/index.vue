@@ -9,6 +9,8 @@
     ]"
     @dragstart.prevent
   >
+    <!-- @dragstart.prevent 禁止文字拖拽 -->
+    <!-- 减号 -->
     <span
       v-if="controls"
       v-repeat-click="decrease"
@@ -19,6 +21,7 @@
     >
       <i :class="`el-icon-${controlsAtRight ? 'arrow-down' : 'minus'}`"></i>
     </span>
+    <!-- 加号 -->
     <span
       v-if="controls"
       v-repeat-click="increase"
@@ -29,6 +32,7 @@
     >
       <i :class="`el-icon-${controlsAtRight ? 'arrow-up' : 'plus'}`"></i>
     </span>
+    <!-- el-input -->
     <el-input
       ref="input"
       :model-value="displayValue"
@@ -124,7 +128,7 @@ export default defineComponent({
     name: String,
     label: String,
     placeholder: String,
-    precision: {
+    precision: {//数值精度
       type: Number,
       validator: (val: number) => val >= 0 && val === parseInt(val + '', 10),
     },
@@ -147,9 +151,11 @@ export default defineComponent({
     const maxDisabled = computed(() => {
       return _increase(props.modelValue) > props.max
     })
+    //数字精度
     const numPrecision = computed(() => {
-      const stepPrecision = getPrecision(props.step)
+      const stepPrecision = getPrecision(props.step)//步骤精度
       if (props.precision !== undefined) {
+        // 理应 数值精度 >= 步骤精度，否则报错
         if (stepPrecision > props.precision) {
           console.warn(
             '[Element Warn][InputNumber]precision should not be less than the decimal places of step',
@@ -169,6 +175,7 @@ export default defineComponent({
     const inputNumberDisabled = computed(() => {
       return props.disabled || elForm.disabled
     })
+    //输入框显示的值
     const displayValue = computed(() => {
       if (data.userInput !== null) {
         return data.userInput
@@ -187,6 +194,7 @@ export default defineComponent({
         Math.round(num * Math.pow(10, pre)) / Math.pow(10, pre) + '',
       )
     }
+    //获取数值精度
     const getPrecision = value => {
       if (value === undefined) return 0
       const valueString = value.toString()
@@ -205,10 +213,12 @@ export default defineComponent({
         (precisionFactor * val + precisionFactor * props.step) / precisionFactor,
       )
     }
+    //减
     const _decrease = val => {
       if (typeof val !== 'number' && val !== undefined) return data.currentValue
-      const precisionFactor = Math.pow(10, numPrecision.value)
+      const precisionFactor = Math.pow(10, numPrecision.value)// 10的几次方 用于将小数转换成整数用
       // Solve the accuracy problem of JS decimal calculation by converting the value to integer.
+      //将结果 转换成 对应精度的数值
       return toPrecision(
         (precisionFactor * val - precisionFactor * props.step) / precisionFactor,
       )
@@ -219,14 +229,16 @@ export default defineComponent({
       const newVal = _increase(value)
       setCurrentValue(newVal)
     }
+    //减
     const decrease = () => {
       if (inputNumberDisabled.value || minDisabled.value) return
       const value = props.modelValue || 0
-      const newVal = _decrease(value)
-      setCurrentValue(newVal)
+      const newVal = _decrease(value)//获取计算后的准确值
+      setCurrentValue(newVal)//更新值
     }
     const setCurrentValue = newVal => {
       const oldVal = data.currentValue
+      //handleInputChange 输入的数值超出精度时，重新计算值
       if (
         typeof newVal === 'number' &&
         props.precision !== undefined
@@ -236,7 +248,7 @@ export default defineComponent({
       if (newVal !== undefined && newVal >= props.max) newVal = props.max
       if (newVal !== undefined && newVal <= props.min) newVal = props.min
       if (oldVal === newVal) return
-      data.userInput = null
+      data.userInput = null //用户输入的值 置为null
       emit('update:modelValue', newVal)
       emit('input', newVal)
       emit('change', newVal, oldVal)
