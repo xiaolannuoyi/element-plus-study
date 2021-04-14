@@ -8,6 +8,7 @@
     @click.prevent="switchValue"
   >
     <!-- Input 被隐藏了，且没有大小。所以input 上的事件时无法触发的。那这个input 有什么用呢？❓ -->
+    <!-- 使用input的原因，是在使用form时，可以通过label来控制开关。 -->
     <input
       :id="id"
       ref="input"
