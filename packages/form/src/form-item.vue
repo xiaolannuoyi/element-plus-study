@@ -339,6 +339,7 @@ export default defineComponent({
 
     onMounted(() => {
       if (props.prop) {
+        //向elFrom 缓存当前实例
         elForm.formMitt?.emit(elFormEvents.addField, elFormItem)
 
         let value = fieldValue.value
@@ -349,6 +350,7 @@ export default defineComponent({
       }
     })
     onBeforeUnmount(() => {
+      //移除当前实例
       elForm.formMitt?.emit(elFormEvents.removeField, elFormItem)
     })
 

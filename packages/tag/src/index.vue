@@ -1,4 +1,5 @@
 <template>
+  <!-- v-if 主要是添加动画的区别 -->
   <span
     v-if="!disableTransitions"
     :class="classes"
@@ -68,6 +69,7 @@ export default defineComponent({
     const tagSize = computed(() => {
       return props.size || ELEMENT.size
     })
+    //样式
     const classes = computed(() => {
       const { type, hit, effect } = props
       return [
@@ -81,7 +83,7 @@ export default defineComponent({
 
     // methods
     const handleClose = event => {
-      event.stopPropagation()
+      event.stopPropagation()//阻止冒泡，使其不触发click事件
       ctx.emit('close', event)
     }
 

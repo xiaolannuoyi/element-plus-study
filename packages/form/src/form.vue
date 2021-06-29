@@ -110,13 +110,13 @@ export default defineComponent({
         }
       },
     )
-
+    // 添加 elItem 实例
     formMitt.on<FormItemCtx>(elFormEvents.addField, field => {
       if (field) {
         fields.push(field)
       }
     })
-
+    // 移除 elItem 实例
     formMitt.on<FormItemCtx>(elFormEvents.removeField, field => {
       if (field.prop) {
         fields.splice(fields.indexOf(field), 1)

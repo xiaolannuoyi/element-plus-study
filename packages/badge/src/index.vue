@@ -1,4 +1,5 @@
 <template>
+  <!-- reactive 位置-->
   <div class="el-badge">
     <slot></slot>
     <transition name="el-zoom-in-center">
