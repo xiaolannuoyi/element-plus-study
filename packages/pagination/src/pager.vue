@@ -1,5 +1,6 @@
 <template>
   <ul class="el-pager" @click="onPagerClick">
+    <!-- 第一页 -->
     <li
       v-if="pageCount > 0"
       :class="{ active: currentPage === 1, disabled }"
@@ -7,6 +8,7 @@
     >
       1
     </li>
+    <!-- showPrevMore  mouseenter时展示⬅，mouseleave时展示•••-->
     <li
       v-if="showPrevMore"
       class="el-icon more btn-quickprev"
@@ -15,6 +17,7 @@
       @mouseleave="quickprevIconClass = 'el-icon-more'"
     >
     </li>
+    <!-- 遍历 -->
     <li
       v-for="pager in pagers"
       :key="pager"
@@ -23,6 +26,7 @@
     >
       {{ pager }}
     </li>
+    <!-- showNextMore  mouseenter时展示➡️，mouseleave时展示•••-->
     <li
       v-if="showNextMore"
       class="el-icon more btn-quicknext"
@@ -31,6 +35,7 @@
       @mouseleave="quicknextIconClass = 'el-icon-more'"
     >
     </li>
+    <!-- 最后一页 -->
     <li
       v-if="pageCount > 1"
       :class="{ active: currentPage === pageCount, disabled }"
@@ -70,33 +75,52 @@ export default defineComponent({
     const showNextMore = ref(false)
     const quicknextIconClass = ref('el-icon-more')
     const quickprevIconClass = ref('el-icon-more')
+    // pagers 用于v-for
     const pagers = computed(() => {
-      const pagerCount = props.pagerCount
-      const halfPagerCount = (pagerCount - 1) / 2
+      const pagerCount = props.pagerCount //页码按钮个数
+      const halfPagerCount = (pagerCount - 1) / 2 //pagerCount 为奇数的目的是 用于判断 当前页所在的区间范围
       const currentPage = Number(props.currentPage)
-      const pageCount = Number(props.pageCount)
+      const pageCount = Number(props.pageCount)//总页数
 
       let showPrevMore = false
       let showNextMore = false
+      //总页数 > 页码按钮数量
       if (pageCount > pagerCount) {
+        //判断当前页在 哪个区间
+        // 当前页 和 前区间（pagerCount 按钮数量 - halfPagerCount）比较
         if (currentPage > pagerCount - halfPagerCount) {
           showPrevMore = true
+          console.warn('pre')
         }
+        // 当前页 和 后区间（pageCount 总页数- halfPagerCount）比较
         if (currentPage < pageCount - halfPagerCount) {
           showNextMore = true
+          console.warn('next')
         }
       }
       const array = []
+      // 四种情况
+      // ✅pre  ❌next
+      // ❌pre  ✅next
+      // ✅pre  ✅next
+      // ❌pre  ❌next
       if (showPrevMore && !showNextMore) {
-        const startPage = pageCount - (pagerCount - 2)
+        // 1 ••• 5 6 7 8 9 10
+        //array 5 6 7 8 9
+        const startPage = pageCount - (pagerCount - 2)//2 为首页，尾页
         for (let i = startPage; i < pageCount; i++) {
           array.push(i)
         }
       } else if (!showPrevMore && showNextMore) {
+        //1 2 3 4 5 6 ••• 10
+        //array 2 3 4 5 6
         for (let i = 2; i < pagerCount; i++) {
           array.push(i)
         }
       } else if (showPrevMore && showNextMore) {
+        //1 ••• 3 4 5 6 7 ••• 10
+        //1 ••• 4 5 6 7 8 ••• 10
+        //【-offset ， offset】
         const offset = Math.floor(pagerCount / 2) - 1
         for (let i = currentPage - offset; i <= currentPage + offset; i++) {
           array.push(i)
@@ -141,7 +165,7 @@ export default defineComponent({
         quicknextIconClass.value = 'el-icon-d-arrow-right'
       }
     }
-
+    // 使用了  事件代理-冒泡原理
     function onPagerClick(event: UIEvent) {
       const target = event.target as HTMLElement
       if (target.tagName.toLowerCase() === 'ul' || props.disabled) {
@@ -149,16 +173,20 @@ export default defineComponent({
       }
 
       let newPage = Number(target.textContent)
-      const pageCount = props.pageCount
-      const currentPage = props.currentPage
-      const pagerCountOffset = props.pagerCount - 2
+      console.log('newPage',newPage)
+
+      const pageCount = props.pageCount//总页数
+      const currentPage = props.currentPage//当前页
+      const pagerCountOffset = props.pagerCount - 2//页码按钮的位移量
+      //如果按钮是 showPreMore 或者 showNextMore 按钮
       if (target.className.includes('more')) {
         if (target.className.includes('quickprev')) {
-          newPage = currentPage - pagerCountOffset
+          newPage = currentPage - pagerCountOffset//左移
         } else if (target.className.includes('quicknext')) {
-          newPage = currentPage + pagerCountOffset
+          newPage = currentPage + pagerCountOffset//右移
         }
       }
+      //左移 右移后的边界问题
       if (!isNaN(newPage)) {
         if (newPage < 1) {
           newPage = 1
@@ -167,6 +195,7 @@ export default defineComponent({
           newPage = pageCount
         }
       }
+      //emit
       if (newPage !== currentPage) {
         emit('change', newPage)
       }

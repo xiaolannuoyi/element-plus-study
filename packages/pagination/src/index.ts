@@ -29,21 +29,23 @@ export default defineComponent({
     Pager,
   },
   props: {
+    //每页显示条目个数，支持 v-model 双向绑定
     pageSize: {
       type: Number,
       default: 10,
     },
-
+    //是否使用小型分页样式
     small: Boolean,
-
+    //总条目数
     total: {
       type: Number,
     },
-
+    //总页数，total 和 page-count 设置任意一个就可以达到显示页码的功能；
+    //如果要支持 page-sizes 的更改，则需要使用 total 属性
     pageCount: {
       type: Number,
     },
-
+    //页码按钮的数量，当总页数超过该值时会折叠
     pagerCount: {
       type: Number,
       validator: (value: number) => {
@@ -53,7 +55,7 @@ export default defineComponent({
       },
       default: 7,
     },
-
+    //当前页数，支持 v-model 双向绑定
     currentPage: {
       type: Number,
       default: 1,
@@ -63,7 +65,7 @@ export default defineComponent({
       type: String,
       default: 'prev, pager, next, jumper, ->, total',
     },
-
+    // 每页个数下拉
     pageSizes: {
       type: Array,
       default: () => {
@@ -85,11 +87,11 @@ export default defineComponent({
       type: String,
       default: '',
     },
-
+    // 是否为分页按钮添加背景色
     background: Boolean,
 
     disabled: Boolean,
-
+    //只有一页时是否隐藏
     hideOnSinglePage: Boolean,
   },
 
@@ -102,9 +104,9 @@ export default defineComponent({
     'update:pageSize',
   ],
   setup(props, { emit }) {
-    const lastEmittedPage = ref(-1)
+    const lastEmittedPage = ref(-1)//最后emit的页码
     const userChangePageSize = ref(false)
-    const internalPageSize = ref(getValidPageSize(props.pageSize))
+    const internalPageSize = ref(getValidPageSize(props.pageSize))//内部每页显示条目个数
 
     const internalPageCount = computed<Nullable<number>>(() => {
       if (typeof props.total === 'number') {
@@ -114,34 +116,43 @@ export default defineComponent({
       }
       return null
     })
-
+    //内部当前页面
     const internalCurrentPage = ref(getValidCurrentPage(props.currentPage))
 
     function emitChange() {
+      //不是同一个页码的情况时 或 用户更改
+      console.warn('===',internalCurrentPage.value !== lastEmittedPage.value ,
+        userChangePageSize.value)
+
       if (
         internalCurrentPage.value !== lastEmittedPage.value ||
         userChangePageSize.value
       ) {
         lastEmittedPage.value = internalCurrentPage.value
         userChangePageSize.value = false
-        emit('update:currentPage', internalCurrentPage.value)
-        emit('current-change', internalCurrentPage.value)
+        emit('update:currentPage', internalCurrentPage.value)//currentPage
+        emit('current-change', internalCurrentPage.value)//触发current-change事件
       }
     }
-
+    // Pager组件中 触发
+    // if (newPage !== currentPage) {
+    //   emit('change', newPage)
+    // }
+    // 已经对 是否同一页 做了处理，所以能触发 必是 internalCurrentPage.value !== lastEmittedPage.value
+    // userChangePageSize.value  好像是没有必要的。
     function handleCurrentChange(val: number) {
       internalCurrentPage.value = getValidCurrentPage(val)
       userChangePageSize.value = true
       emitChange()
     }
-
+    //sizes 组件中  修改了每页条数
     function handleSizesChange(val: number) {
       userChangePageSize.value = true
       internalPageSize.value = val
       emit('update:pageSize', val)
       emit('size-change', val)
     }
-
+    //上一页
     function prev() {
       if (props.disabled) return
       const newVal = internalCurrentPage.value - 1
@@ -237,7 +248,7 @@ export default defineComponent({
       (!this.internalPageCount || this.internalPageCount === 1)
     )
       return null
-
+    //<div class="el-pagination is-background ..."></div>
     const rootNode = h('div', {
       class: [
         'el-pagination',
@@ -249,6 +260,7 @@ export default defineComponent({
     })
     const rootChildren = []
     const rightWrapperChildren = []
+    //右侧间距 -> 在layout中使用‘->’ 其右侧的内容 会靠右侧对齐 float：right
     const rightWrapperRoot = h('div', { class: 'el-pagination__rightwrapper' }, rightWrapperChildren)
     const TEMPLATE_MAP = {
       prev: h(Prev, {
@@ -285,7 +297,7 @@ export default defineComponent({
     const components = layout.split(',').map((item: string) => item.trim())
 
     let haveRightWrapper = false
-
+    //遍历components , 遇到->后 让后面的组件都放入到rightWrapperChildren中
     components.forEach((c: keyof typeof TEMPLATE_MAP | '->') => {
       if (c === '->') {
         haveRightWrapper = true
@@ -297,9 +309,9 @@ export default defineComponent({
         rightWrapperChildren.push(TEMPLATE_MAP[c])
       }
     })
-
+    // 当有 -> 标识时，且rightWrapperChildren > 0
     if (haveRightWrapper && rightWrapperChildren.length > 0) {
-      rootChildren.unshift(rightWrapperRoot)
+      rootChildren.unshift(rightWrapperRoot)//push 也可以吧
     }
 
     return h(rootNode, {}, rootChildren)

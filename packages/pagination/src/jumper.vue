@@ -33,12 +33,13 @@ export default defineComponent({
   setup() {
     const { pagination, pageCount, disabled, currentPage } = usePagination()
     const userInput = ref<Nullable<number>>(null)
+    //:model-value="innerValue"
     const innerValue = computed(() => userInput.value ?? currentPage.value)
-
+    //input
     function handleInput(val: number | string) {
       userInput.value = Number(val)
     }
-
+    //仅在输入框失去焦点或用户按下回车时触发
     function handleChange(val: number | string) {
       pagination?.changeEvent(Number(val))
       userInput.value = null

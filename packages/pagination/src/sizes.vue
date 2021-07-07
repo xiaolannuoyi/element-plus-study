@@ -47,7 +47,7 @@ export default defineComponent({
   },
   emits: ['page-size-change'],
   setup(props, { emit }) {
-    const { pagination } = usePagination()
+    const { pagination } = usePagination()//reject
     const innerPageSize = ref<Nullable<number>>(props.pageSize)
 
     watch(() => props.pageSizes, (newVal, oldVal) => {
