@@ -64,13 +64,8 @@ const useModel = (props: ICheckboxProps) => {
         // ?.链式调用。
         isLimitExceeded.value === false && checkboxGroup?.changeEvent?.(val)
       } else {
-<<<<<<< HEAD
         emit(UPDATE_MODEL_EVENT, val)//update:modelValue 修改checkbox的value值
-        selfModel = val as boolean
-=======
-        emit(UPDATE_MODEL_EVENT, val)
         selfModel.value = val as boolean
->>>>>>> dev
       }
     },
   })
@@ -163,7 +158,7 @@ const useEvent = (props: ICheckboxProps, { isLimitExceeded }: PartialReturnType<
   const { elFormItem } = useCheckboxGroup()
   const { emit } = getCurrentInstance()
   function handleChange(e: InputEvent) {
-    if (isLimitExceeded.value) return  //如果突破限制 就不能修改值
+    if (isLimitExceeded.value) return //如果突破限制 就不能修改值
     const target = e.target as HTMLInputElement
     const value = target.checked
       ? props.trueLabel ?? true

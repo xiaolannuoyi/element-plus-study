@@ -219,13 +219,16 @@ export default defineComponent({
         [props.max]: props.iconClasses[2], //最大
       } : props.iconClasses,
     )
-    //根据当前值 返回对应的图标
+    //小数图标 - 根据当前值 返回对应的图标,
+    //当currentValue变化时还是以props.modelValue的显示❓❓
+    //我提出的issues https://github.com/element-plus/element-plus/issues/2465
+    //个人认为 应该 props.modelValue ==修改成==> currentValue.value
     const decimalIconClass = computed(() => getValueFromMap(props.modelValue, classMap.value))
     //空心图标 ☆
     const voidClass = computed(() => rateDisabled.value ? props.disabledVoidIconClass : props.voidIconClass)
-    //active图标 ⭐︎
+    //active图标 ⭐︎ 通过classMap判断当前值所在区域（低中高），获取对应的icon
     const activeClass = computed(() => getValueFromMap(currentValue.value, classMap.value))
-    //classes 返回icon数组，通过classMap判断当前值所在区域（低中高），获取对应的icon
+    //classes 返回icon数组 active图标/空心图标
     const classes = computed(() => {
       let result = Array(props.max)
       let threshold = currentValue.value
@@ -236,7 +239,7 @@ export default defineComponent({
       result.fill(activeClass.value, 0, threshold)
       result.fill(voidClass.value, threshold, props.max)
       // ["el-icon-star-on", "el-icon-star-on", "el-icon-star-off", "el-icon-star-off", "el-icon-star-off"]
-      // [⭐︎,⭐︎,☆,☆,☆]
+      // [⭐️,⭐️,☆,☆,☆]
       return result
     })
 
@@ -247,14 +250,17 @@ export default defineComponent({
       currentValue.value = val
       pointerAtLeftHalf.value = props.modelValue !== Math.floor(props.modelValue) //只要是小数的情况，就是ture
     })
-    //是否显示小数图标
+    //是否显示小数图标 在当前数值下是否显示小数图标
     function showDecimalIcon(item: number) {
+      // 禁用状态下 可以显示具体的小数 范围区间：item-1 < props.modelValue < item
       let showWhenDisabled = rateDisabled.value && valueDecimal.value > 0 && item - 1 < props.modelValue && item > props.modelValue
       /* istanbul ignore next */
+      // 一半状态下 显示50% 范围区间：item - 0.5 <= currentValue.value < item ；比方 2.5~3
       let showWhenAllowHalf = props.allowHalf &&
         pointerAtLeftHalf.value &&
         item - 0.5 <= currentValue.value &&
         item > currentValue.value
+
       return showWhenDisabled || showWhenAllowHalf
     }
     //颜色填充
@@ -270,6 +276,9 @@ export default defineComponent({
       if (rateDisabled.value) {
         return
       }
+      //区分更新modelValue 和 触发change 的时机
+      //小数时，currentValue.value 是小数
+      //整数时，currentValue.value === value
       if (props.allowHalf && pointerAtLeftHalf.value) {
         emit('update:modelValue', currentValue.value)
         if (props.modelValue !== currentValue.value) {
@@ -317,11 +326,8 @@ export default defineComponent({
     }
     //hover样式
     const hoverIndex = ref(-1)
-<<<<<<< HEAD
-    //mousemove->绑定在el-rate__item 通过移动来实现当前值的变化 但是不会修改值
-=======
 
->>>>>>> dev
+    //mousemove->绑定在el-rate__item 通过移动来实现当前值的变化 但是不会修改值
     function setCurrentValue(value: number, event: MouseEvent) {
       if (rateDisabled.value) {
         return
