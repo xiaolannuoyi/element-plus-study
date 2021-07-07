@@ -48,8 +48,12 @@
 <script lang='ts'>
 import { defineComponent, computed, onMounted, ref, inject, nextTick, watch } from 'vue'
 import { elFormKey, elFormItemKey } from '@element-plus/form'
+import { isPromise } from '@vue/shared'
+import { isBool } from '@element-plus/utils/util'
+import throwError, { warn } from '@element-plus/utils/error'
 
 import type { ElFormContext, ElFormItemContext } from '@element-plus/form'
+import type { PropType } from 'vue'
 
 
 type ValueType = boolean | string | number;
@@ -71,6 +75,7 @@ interface ISwitchProps {
   validateEvent: boolean
   id: string
   loading:boolean
+  beforeChange?: () => (Promise<boolean> | boolean)
 }
 
 export default defineComponent({
@@ -137,6 +142,7 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    beforeChange: Function as PropType<() => (Promise<boolean> | boolean)>,
   },
   emits: ['update:modelValue', 'change', 'input'],
   setup(props: ISwitchProps, ctx) {
@@ -146,6 +152,8 @@ export default defineComponent({
     const isModelValue = ref(props.modelValue !== false)
     const input = ref(null)
     const core = ref(null)
+
+    const scope = 'ElSwitch'
 
     watch(() => props.modelValue, () => {
       isModelValue.value = true
@@ -197,7 +205,34 @@ export default defineComponent({
     }
 
     const switchValue = (): void => {
-      !switchDisabled.value && handleChange()
+      if (switchDisabled.value) return
+
+      const { beforeChange } = props
+      if (!beforeChange) {
+        handleChange()
+        return
+      }
+
+      const shouldChange = beforeChange()
+
+      const isExpectType = [isPromise(shouldChange), isBool(shouldChange)].some(i => i)
+      if (!isExpectType) {
+        throwError(scope, 'beforeChange must return type `Promise<boolean>` or `boolean`')
+      }
+
+      if (isPromise(shouldChange)) {
+        shouldChange.then(result => {
+          if (result) {
+            handleChange()
+          }
+        }).catch(e => {
+          if (process.env.NODE_ENV !== 'production') {
+            warn(scope, `some error occurred: ${e}`)
+          }
+        })
+      } else if (shouldChange) {
+        handleChange()
+      }
     }
 
     const setBackgroundColor = (): void => {
@@ -208,8 +243,12 @@ export default defineComponent({
       coreEl.children[0].style.color = newColor
     }
 
+    const focus = (): void => {
+      input.value?.focus?.()
+    }
+
     onMounted(() => {
-      if (props.activeValue || props.inactiveValue) {
+      if (props.activeColor || props.inactiveColor) {
         setBackgroundColor()
       }
 
@@ -223,6 +262,7 @@ export default defineComponent({
       checked,
       handleChange,
       switchValue,
+      focus,
     }
   },
 })

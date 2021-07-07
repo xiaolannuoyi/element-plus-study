@@ -20,27 +20,42 @@
       </component>
     </div>
     <template v-if="!native">
-      <bar :move="moveX" :size="sizeWidth" />
-      <bar vertical :move="moveY" :size="sizeHeight" />
+      <bar :move="moveX" :size="sizeWidth" :always="always" />
+      <bar
+        :move="moveY"
+        :size="sizeHeight"
+        vertical
+        :always="always"
+      />
     </template>
   </div>
 </template>
 <script lang="ts">
 import { addResizeListener, removeResizeListener } from '@element-plus/utils/resize-event'
-import { toObject } from '@element-plus/utils/util'
+import { addUnit, isArray, isNumber, isString, toObject } from '@element-plus/utils/util'
 import { computed, defineComponent, nextTick, onBeforeUnmount, onMounted, provide, ref } from 'vue'
 import Bar from './bar.vue'
+import type { CSSProperties, PropType } from 'vue'
+import { warn } from '@element-plus/utils/error'
 
 export default defineComponent({
   name: 'ElScrollbar',
   components: { Bar },
   props: {
+    height: {
+      type: [String, Number],
+      default: '',
+    },
+    maxHeight: {
+      type: [String, Number],
+      default: '',
+    },
     native: {
       type: Boolean,
       default: false,
     },
     wrapStyle: {
-      type: [String, Array],
+      type: [String, Array] as PropType<string | CSSProperties[]>,
       default: '',
     },
     wrapClass: {
@@ -60,8 +75,13 @@ export default defineComponent({
       type: String,
       default: 'div',
     },
+    always: {
+      type: Boolean,
+      default: false,
+    },
   },
-  setup(props) {
+  emits: ['scroll'],
+  setup(props, { emit }) {
     const sizeWidth = ref('0')
     const sizeHeight = ref('0')
     const moveX = ref(0)
@@ -70,14 +90,40 @@ export default defineComponent({
     const wrap = ref(null)
     const resize = ref(null)
 
+    const SCOPE = 'ElScrollbar'
+
     provide('scrollbar', scrollbar)
     provide('scrollbar-wrap', wrap)
 
     const handleScroll = () => {
-      if (!props.native && wrap.value) {
+      if (wrap.value) {
         moveY.value = (wrap.value.scrollTop * 100) / wrap.value.clientHeight
         moveX.value = (wrap.value.scrollLeft * 100) / wrap.value.clientWidth
+        emit('scroll', {
+          scrollLeft: moveX.value,
+          scrollTop: moveY.value,
+        })
       }
+    }
+
+    const setScrollTop = (value: string) => {
+      if (!isNumber(value)) {
+        if (process.env.NODE_ENV !== 'production') {
+          warn(SCOPE, 'value must be a number')
+        }
+        return
+      }
+      wrap.value.scrollTop = value
+    }
+
+    const setScrollLeft = (value: string) => {
+      if (!isNumber(value)) {
+        if (process.env.NODE_ENV !== 'production') {
+          warn(SCOPE, 'value must be a number')
+        }
+        return
+      }
+      wrap.value.scrollLeft = value
     }
 
     const update = () => {
@@ -91,15 +137,22 @@ export default defineComponent({
     }
 
     const style = computed(() => {
-      if (Array.isArray(props.wrapStyle)) {
-        return toObject(props.wrapStyle)
+      let style = props.wrapStyle
+      if (isArray(style)) {
+        style = toObject(style)
+        style.height = addUnit(props.height)
+        style.maxHeight = addUnit(props.maxHeight)
+      } else if (isString(style)) {
+        style += addUnit(props.height) ? `height: ${addUnit(props.height)};` : ''
+        style += addUnit(props.maxHeight) ? `max-height: ${addUnit(props.maxHeight)};` : ''
       }
-      return props.wrapStyle
+      return style
     })
 
     onMounted(() => {
-      if (props.native) return
-      nextTick(update)
+      if (!props.native) {
+        nextTick(update)
+      }
       if (!props.noresize) {
         addResizeListener(resize.value, update)
         addEventListener('resize', update)
@@ -107,7 +160,6 @@ export default defineComponent({
     })
 
     onBeforeUnmount(() => {
-      if (props.native) return
       if (!props.noresize) {
         removeResizeListener(resize.value, update)
         removeEventListener('resize', update)
@@ -125,6 +177,8 @@ export default defineComponent({
       resize,
       update,
       handleScroll,
+      setScrollTop,
+      setScrollLeft,
     }
   },
 })

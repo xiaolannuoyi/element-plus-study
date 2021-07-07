@@ -34,7 +34,7 @@ export const useCheckboxGroup = () => {
 }
 
 const useModel = (props: ICheckboxProps) => {
-  let selfModel = false
+  const selfModel = ref(false)
   const { emit } = getCurrentInstance()
   const { isGroup, checkboxGroup } = useCheckboxGroup()
   const isLimitExceeded = ref(false)//是否突破限制
@@ -44,7 +44,7 @@ const useModel = (props: ICheckboxProps) => {
     get() {
       return isGroup.value
         ? store.value
-        : props.modelValue ?? selfModel
+        : props.modelValue ?? selfModel.value
         // 「双问号」?? 如果给定变量值为 null 或者 undefined，则使用双问号后的默认值，否则使用该变量值。
     },
 
@@ -64,8 +64,13 @@ const useModel = (props: ICheckboxProps) => {
         // ?.链式调用。
         isLimitExceeded.value === false && checkboxGroup?.changeEvent?.(val)
       } else {
+<<<<<<< HEAD
         emit(UPDATE_MODEL_EVENT, val)//update:modelValue 修改checkbox的value值
         selfModel = val as boolean
+=======
+        emit(UPDATE_MODEL_EVENT, val)
+        selfModel.value = val as boolean
+>>>>>>> dev
       }
     },
   })

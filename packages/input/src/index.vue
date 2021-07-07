@@ -10,7 +10,8 @@
         'el-input-group--append': $slots.append,
         'el-input-group--prepend': $slots.prepend,
         'el-input--prefix': $slots.prefix || prefixIcon,
-        'el-input--suffix': $slots.suffix || suffixIcon || clearable || showPassword
+        'el-input--suffix': $slots.suffix || suffixIcon || clearable || showPassword,
+        'el-input--suffix--password-clear': clearable && showPassword
       },
       $attrs.class
     ]"
@@ -37,6 +38,7 @@
         :tabindex="tabindex"
         :aria-label="label"
         :placeholder="placeholder"
+        :style="inputStyle"
         @compositionstart="handleCompositionStart"
         @compositionupdate="handleCompositionUpdate"
         @compositionend="handleCompositionEnd"
@@ -91,7 +93,7 @@
       :disabled="inputDisabled"
       :readonly="readonly"
       :autocomplete="autocomplete"
-      :style="textareaStyle"
+      :style="computedTextareaStyle"
       :aria-label="label"
       :placeholder="placeholder"
       @compositionstart="handleCompositionStart"
@@ -213,11 +215,15 @@ export default defineComponent({
       type: String,
     },
     tabindex: { // 控制tab键按下后的访问顺序，由用户传入tabindex如果设置为负数则无法通过tab键访问，设置为0则是在最后访问。
-      type: String,
+      type: [Number, String],
     },
     validateEvent: {
       type: Boolean,
       default: true,
+    },
+    inputStyle: {
+      type: Object,
+      default: () => ({}),
     },
   },
 
@@ -240,13 +246,14 @@ export default defineComponent({
     // 状态改变的事件 input
     // ☞ compositionstart  文字输入之前触发 ☞ compositionupdate 输入过程中每次敲击键盘触发 ☞ compositionend 选择字词完成时触发
     const passwordVisible = ref(false)//是否显示密码 用于input type 的切换,事件触发 click 密码查看图标
-    const _textareaCalcStyle = shallowRef({})//
-    const inputOrTextarea = computed(() => input.value || textarea.value)//dom
+    const _textareaCalcStyle = shallowRef(props.inputStyle)
+
+    const inputOrTextarea = computed(() => input.value || textarea.value)
     const inputSize = computed(() => props.size || elFormItem.size || $ELEMENT.size)
     const needStatusIcon = computed(() => elForm.statusIcon)
     const validateState = computed(() => elFormItem.validateState || '')
     const validateIcon = computed(() => VALIDATE_STATE_MAP[validateState.value])
-    const textareaStyle = computed(() => ({
+    const computedTextareaStyle = computed(() => ({
       ..._textareaCalcStyle.value,
       resize: props.resize,
     }))
@@ -299,9 +306,13 @@ export default defineComponent({
       if (autosize) {
         const minRows = isObject(autosize) ? autosize.minRows : void 0 //void 0 代替undefined,主要原因在于避免 undefined 值被重写带来的风险
         const maxRows = isObject(autosize) ? autosize.maxRows : void 0
-        _textareaCalcStyle.value = calcTextareaHeight(textarea.value, minRows, maxRows)
+        _textareaCalcStyle.value = {
+          ...props.inputStyle,
+          ...calcTextareaHeight(textarea.value, minRows, maxRows),
+        }
       } else {
         _textareaCalcStyle.value = {
+          ...props.inputStyle,
           minHeight: calcTextareaHeight(textarea.value).minHeight,
         }
       }
@@ -489,7 +500,7 @@ export default defineComponent({
       inputSize,
       validateState,
       validateIcon,
-      textareaStyle,
+      computedTextareaStyle,
       resizeTextarea,
       inputDisabled,
       showClear,

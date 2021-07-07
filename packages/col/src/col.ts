@@ -68,8 +68,9 @@ const ElCol = defineComponent({
       const pos = ['span', 'offset', 'pull', 'push'] as const
       pos.forEach(prop => {
         const size = props[prop]
-        if (typeof size === 'number' && size > 0) { //size>0 省去了pull、offset、push=0等问题，span=0 也没有了
-          ret.push(prop !== 'span' ? `el-col-${prop}-${props[prop]}` : `el-col-${props[prop]}`)
+        if (typeof size === 'number') {
+          if(prop === 'span') ret.push(`el-col-${props[prop]}`)
+          else if(size > 0) ret.push(`el-col-${prop}-${props[prop]}`)
         }
       })
       //处理屏幕响应相关

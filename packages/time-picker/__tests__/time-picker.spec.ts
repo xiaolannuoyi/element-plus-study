@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import TimePicker from '../src/time-picker'
+import Picker from '../src/common/picker.vue'
 import { triggerEvent } from '@element-plus/test-utils'
 import dayjs from 'dayjs'
 
@@ -91,8 +92,8 @@ describe('TimePicker', () => {
     const minutesEl = list[1]
     const secondsEl = list[2]
     const hourEl = hoursEl.querySelectorAll('.el-time-spinner__item')[4] as any
-    const minuteEl = minutesEl.querySelectorAll('.el-time-spinner__item')[36]  as any
-    const secondEl = secondsEl.querySelectorAll('.el-time-spinner__item')[20]  as any
+    const minuteEl = minutesEl.querySelectorAll('.el-time-spinner__item')[36] as any
+    const secondEl = secondsEl.querySelectorAll('.el-time-spinner__item')[20] as any
     // click hour, minute, second one at a time.
     hourEl.click()
     await nextTick()
@@ -219,9 +220,11 @@ describe('TimePicker', () => {
     const hourEl = hoursEl.querySelectorAll('.el-time-spinner__item')[4] as any
     hourEl.click()
     await nextTick()
-    expect(changeHandler).toHaveBeenCalledTimes(1);
-    (document.querySelector('.el-time-panel__btn.cancel') as any).click()
+    expect(changeHandler).toHaveBeenCalledTimes(0);
+    (document.querySelector('.el-time-panel__btn.confirm') as any).click()
     await nextTick()
+    await nextTick() // onchange is triggered by props.modelValue update
+    expect(changeHandler).toHaveBeenCalledTimes(1)
     expect(blurHandler).toHaveBeenCalledTimes(1)
   })
 
@@ -424,6 +427,32 @@ describe('TimePicker(range)', () => {
     const addOneHourOneMinute = input.element.value
     expect(dayjs(initValue).diff(addOneHour, 'minute')).toEqual(-60)
     expect(dayjs(initValue).diff(addOneHourOneMinute, 'minute')).toEqual(-61)
+  })
+
+  it('should be able to inherit options from parent injection', async () => {
+    const ElPopperOptions = {
+      strategy: 'fixed',
+    }
+    const wrapper = _mount(
+      `<el-time-picker
+        v-model="value"
+        format="YYYY-MM-DD HH:mm:ss"
+        :popper-options="options"
+      />`, () => ({ value: new Date(2016, 9, 10, 18, 40), options: ElPopperOptions }),
+      {
+        provide() {
+          return {
+            ElPopperOptions,
+          }
+        },
+      },
+    )
+
+    await nextTick()
+
+    expect((
+      (wrapper.findComponent(Picker).vm as any).elPopperOptions),
+    ).toEqual(ElPopperOptions)
   })
 })
 

@@ -139,7 +139,7 @@ export default defineComponent({
     //辅助文字数组 ['极差', '失望', '一般', '满意', '惊喜']
     texts: {
       type: Array as PropType<string[]>,
-      default: () => ['Extremely bad','Disappointed','Fair','Satisfied','Surprise'],
+      default: () => ['Extremely bad', 'Disappointed', 'Fair', 'Satisfied', 'Surprise'],
     },
     //分数显示模板
     scoreTemplate: {
@@ -200,7 +200,7 @@ export default defineComponent({
     const decimalStyle = computed(() => {
       let width = ''
       if (rateDisabled.value) {
-        width = `${ valueDecimal.value }%`
+        width = `${valueDecimal.value}%`
       } else if (props.allowHalf) {
         width = '50%'
       }
@@ -272,10 +272,14 @@ export default defineComponent({
       }
       if (props.allowHalf && pointerAtLeftHalf.value) {
         emit('update:modelValue', currentValue.value)
-        emit('change', this.currentValue)
+        if (props.modelValue !== currentValue.value) {
+          emit('change', currentValue.value)
+        }
       } else {
         emit('update:modelValue', value)
-        emit('change', value)
+        if (props.modelValue !== value) {
+          emit('change', value)
+        }
       }
     }
     // ⬆️⬇️⬅️➡️
@@ -313,7 +317,11 @@ export default defineComponent({
     }
     //hover样式
     const hoverIndex = ref(-1)
+<<<<<<< HEAD
     //mousemove->绑定在el-rate__item 通过移动来实现当前值的变化 但是不会修改值
+=======
+
+>>>>>>> dev
     function setCurrentValue(value: number, event: MouseEvent) {
       if (rateDisabled.value) {
         return
